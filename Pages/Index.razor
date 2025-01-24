@@ -1,0 +1,231 @@
+﻿@page "/"
+
+<!--main field-->
+<div class="PoolPolygons" style="width:@($"{ScreenWidth}px"); height:@($"{ScreenHeight}px")" @onclick="AddPoint" @onmousemove="MouseMove">
+	<!--vertices drawing-->
+	@foreach (Point p in Vertices)
+	{
+		<div style="position:absolute;
+						left: @($"{p.X-3}px");
+						top: @($"{p.Y-3}px");
+						width: 6px;
+						height: 6px;
+						border-radius: 50%;
+						background-color: black"></div>
+	}
+	<!--line drawing-->
+	<svg width=@ScreenWidth height=@ScreenHeight style="border: 1px solid none;">
+		@if (Vertices.Count > 1)
+		{
+			@for (int i = 1; i < Vertices.Count; i++)
+			{
+				<line x1="@Vertices[i-1].X" y1="@Vertices[i-1].Y" x2="@Vertices[i].X" y2="@Vertices[i].Y" stroke="black" />
+			}
+			<line x1="@Vertices[Vertices.Count-1].X" y1="@Vertices[Vertices.Count-1].Y" x2="@Vertices[0].X" y2="@Vertices[0].Y" stroke="black" />
+		}
+	</svg>
+	<!--point drawing-->
+	@if (Dot.X > 0 && Dot.Y > 0)
+	{
+		<div style="position:absolute;
+						left: @($"{Dot.X-3}px");
+						top: @($"{Dot.Y-3}px");
+						width: 6px;
+						height: 6px;
+						border-radius: 50%;
+						background-color: yellow">
+		</div>
+	}
+
+</div>
+<!--=====================================================================-->
+<!--info panel-->
+<div class="AllInfoDiv" style="width: @($"{ScreenWidth}px")">
+	<!--common info-->
+	<div class="SubDivInfo">
+		<div class="HorizontalDiv">
+			<div class="cell">
+				<br>Mouse X: @MouseCoordX;
+				<br>Mouse Y: @MouseCoordY;
+			</div>
+			<!-- horizontal place -->
+
+			<div class="cell" id="BoxSize">
+				<div>
+					<label for="BoxWidth">Box width: </label>
+					<input id="BoxWidth" type="number" @bind="ScreenWidth" min="360" max="720" />
+				</div>
+				<div>
+					<label for="BoxHeight">Box height: </label>
+					<input id="BoxHeight" type="number" @bind="ScreenHeight" min="360" max="720" />
+				</div>
+			</div>
+		</div>
+		<!--======== vertical place =========-->
+		<hr>
+		<div class="HorizontalDiv">
+			<div class="cell">
+				<br>Set position:
+				<div>
+					<input type="radio" id="IdVertices" name="Choise" @onchange="ChangeSelect" value="vertices" checked>
+					<label for="IdVertices"> Vertices </label>
+				</div>
+				<div>
+					<input type="radio" id="IdPoint" name="Choise" @onchange="ChangeSelect" value="point">
+					<label for="IdPoint"> Point </label>
+				</div>
+			</div>
+			<!--dot info-->
+			<div class="cell">
+				<center> Point info </center>
+				<br>Position: @PointPlace
+				<br>X: @Dot.X
+				<br>Y: @Dot.Y
+			</div>
+		</div>
+	</div>
+
+
+	<!--vertices info-->
+	<div class="SubDivInfo">
+		<center> Polygon info </center>
+		<br>Polygon count: @Vertices.Count
+		<div id="vertCoordShowing">
+			Show vertices coordinates:
+			<input type="checkbox" id="ShowingVertCoordCheck" name="ArrayInfo" @bind="ShowVertArray" />
+		</div>
+		@if (ShowVertArray)
+		{
+			<hr />
+			<table>
+				<tbody>
+					<tr>
+						<th>point</th>
+						<th>pos x</th>
+						<th>pos y</th>
+					</tr>
+					@for (int i = 0; i < Vertices.Count; i++)
+					{
+						<tr>
+							<td>@i</td>
+							<td>@Vertices[i].X</td>
+							<td>@Vertices[i].Y</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		}
+	</div>
+</div>
+
+
+@code {
+	//drawing box (line drawing boxes) size
+	private int ScreenWidth = 500;
+	private int ScreenHeight = 500;
+
+	public double MouseCoordX = 0;
+	public double MouseCoordY = 0;
+
+	private string PointSelected { get; set; } = "vertices";
+	private bool ShowVertArray = false;
+
+	public string PointPlace = "None";
+
+	public bool PointPlaceCheck(Point point, List<Point> polygon)
+	{
+		int n = polygon.Count;
+		bool inside = false;
+
+		double p1x = polygon[0].X;
+		double p1y = polygon[0].Y;
+
+		for (int i = 1; i <= n; i++)
+		{
+			double p2x = polygon[i % n].X;
+			double p2y = polygon[i % n].Y;
+
+			if (point.Y > Math.Min(p1y, p2y))
+			{
+				if (point.Y <= Math.Max(p1y, p2y))
+				{
+					if (point.X <= Math.Max(p1x, p2x))
+					{
+						if (p1y != p2y)
+						{
+							double xinters = (point.Y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x;
+							if (p1x == p2x || point.X <= xinters)
+							{
+								inside = !inside;
+							}
+						}
+					}
+				}
+			}
+			p1x = p2x;
+			p1y = p2y;
+		}
+		return inside;
+	}
+
+	public Point Dot = new Point(0, 0);
+
+	public List<Point> Vertices = new List<Point>(8);
+
+	public class Point
+	{
+		public double X { get; set; }
+		public double Y { get; set; }
+
+		public Point(double x, double y)
+		{
+			X = x;
+			Y = y;
+		}
+	}
+	public void AddPoint(MouseEventArgs e)
+	{
+		if (Vertices.Count < 8 && PointSelected == "vertices")
+		{
+			Vertices.Add(new Point(e.OffsetX, e.OffsetY));
+		}
+		else if (PointSelected == "point")
+		{
+			if (Dot == null)
+			{
+				Dot = new Point(0, 0);
+			}
+			Dot.X = e.OffsetX;
+			Dot.Y = e.OffsetY;
+		}
+
+		if (Vertices.Count > 2)
+		{
+			if (PointPlaceCheck(Dot, Vertices.Take(Vertices.Count).ToList()))
+			{
+				PointPlace = "Inside";
+			}
+			else
+			{
+				PointPlace = "Outside";
+			}
+		}
+	}
+
+	public void MouseMove(MouseEventArgs e)
+	{
+		MouseCoordX = e.OffsetX;
+		MouseCoordY = e.OffsetY;
+	}
+
+	private void ChangeSelect(ChangeEventArgs e)
+	{
+		if (e.Value != null)
+		{
+			if (e.Value.GetType() == typeof(string))
+			{
+				PointSelected = (string)e.Value;
+			}
+		}
+	}
+}
