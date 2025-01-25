@@ -127,7 +127,7 @@
 	public double MouseCoordX = 0;
 	public double MouseCoordY = 0;
 
-	private string PointSelected { get; set; } = "vertices";
+	private string PointSelected = "vertices";
 	private bool ShowVertArray = false;
 
 	public string PointPlace = "None";
@@ -183,6 +183,7 @@
 			Y = y;
 		}
 	}
+
 	public void AddPoint(MouseEventArgs e)
 	{
 		if (Vertices.Count < 8 && PointSelected == "vertices")
